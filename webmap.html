@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>Access to Necessity and Green Space in Different Neighborhood</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css" integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js" integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw==" crossorigin=""></script>
+	
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+	<link href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.35.1/mapbox-gl.css" rel='stylesheet' />
+	<script src="https://api.tiles.mapbox.com/mapbox-gl-js/v0.35.1/mapbox-gl.js"></script>
+	<script src="http://rawgit.com/mapbox/mapbox-gl-leaflet/master/leaflet-mapbox-gl.js"></script>
+	
+	<script src = "One_per_Class.js"></script>
+	<script src = "Over_4_per_Class.js"></script>
+	<script src = "Two_Or_3_per_Class.js"></script>
+	<!--
+	<div><center>
+	</center></div> -->
+	
+	<style>
+		html, body {
+			height: 100%;
+			margin: auto;
+		}
+		#map {
+			height: 100%;
+			width: 100%;
+			margin: auto;
+		}
+		
+		h1, h3 {
+			text-align: middle;
+		}
+		
+		.legend {
+			background-color: black;
+			line-height: 18px;
+			color: #555;
+		}
+
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+		}
+		
+		.info {
+			padding: 8px;
+			font: 16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+		}
+		
+		.info h4 {
+			font-size: 20px;
+			margin: 0 0 5px;
+			color: #777;
+		}
+	</style>
+
+	
+</head>
+<body>
+
+<div id='map'></div>
+
+<script>
+	
+	var mbAttr = 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+			'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+		mbUrl = 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+
+			
+	var basemap = L.tileLayer(mbUrl, {id: 'mapbox.dark', attribution: mbAttr});
+	
+	var low_range_layer = L.layerGroup();
+	var mid_range_layer = L.layerGroup();
+	var upper_range_layer = L.layerGroup();
+
+	var importLow_Range = L.geoJson(one, {onEachFeature: addtoLayerGroup});
+	var importMid_Range = L.geoJson(two, {onEachFeature: addtoLayerGroup});
+	var importUpper_Range = L.geoJson(three, {onEachFeature: addtoLayerGroup});
+
+	function addtoLayerGroup(feature) {
+		coords = feature.geometry.coordinates
+		output = []
+		
+		for (var i = 0; i < coords.length; i++) {
+			output.push([coords[i][1], coords[i][0]]);
+		}
+		
+		var count = feature.properties.Count;
+		
+		var opa = 0.28;
+		var layerName = low_range_layer;
+		if (count > 3) {
+			layerName = upper_range_layer;
+			opa = 0.8;
+		} else if (count > 1) {
+			layerName = mid_range_layer;
+			opa = 0.5;
+		}
+		
+		var classInfo = "Classroom 1: " + feature.properties.room1 + "<br>Classroom 2: " 
+						+ feature.properties.room2 + "<br>Student Count: " + feature.properties.Count;
+		L.polyline(output, {color: color(count), weight: 1.5, opacity: opa}).addTo(layerName).bindPopup(classInfo);
+	}
+	
+	var map = L.map('map', {
+		center: [47.655195, -122.307993],
+		zoom: 16.49999999999999,
+		layers: [basemap, low_range_layer, mid_range_layer, upper_range_layer]
+	});
+	
+	
+	var info = L.control({position: 'topleft'});
+
+	info.onAdd = function (map) {
+		div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+		div.innerHTML = '<h4>Number of Freshman and Sophomore Late to Class per Route</h4>';
+	return div;
+	};
+
+	info.addTo(map);
+	
+	function color(x) {
+		return x > 3 ? '#d7301f':
+				x > 1 ? '#fc8d59':
+				x > 0 ?  '#fdcc8a':
+					'#fef0d9';
+	}
+	
+	var baseLayers = {
+		"Basemap": basemap
+	};
+
+	var overlays = {
+		"1 Student Late": low_range_layer,
+		"2 to 3 Students Late": mid_range_layer,
+		"Over 4 Students Late": upper_range_layer
+	};
+
+	L.control.layers(baseLayers,overlays).addTo(map);
+
+	
+	var legend = L.control({position: 'bottomright'});  
+    legend.onAdd = function (map) {
+
+		var div = L.DomUtil.create('div', 'info legend'),
+			grades = [0, 2, 4],
+			labels = ['<Strong> Student Count </Strong>'],
+			from, to;
+
+		for (var i = 0; i < grades.length; i++) {
+			from = grades [i];
+			to = grades[i+1] - 1;
+			
+			if ((from + 0.1) < 1) {
+			
+				labels.push(
+					'<i style="background:' + color(from + 0.1) + '"></i> ' +
+					to ) ;
+			} else {
+				labels.push(
+					'<i style="background:' + color(from + 0.1) + '"></i> ' +
+					from + (to ? '&ndash;' + to : '+'));
+			}
+		}
+        
+		div.innerHTML = labels.join('<br>');
+        
+		return div;
+
+    };
+	
+	legend.addTo(map);
+	
+	
+</script>
+
+
+
+</body>
+</html>
